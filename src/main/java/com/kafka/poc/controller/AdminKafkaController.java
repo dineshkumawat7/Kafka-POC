@@ -73,7 +73,7 @@ public class AdminKafkaController {
     @PostMapping("/topic")
     public ResponseEntity<CommonSuccessResponse<KafkaTopicInfo>> createNewKafkaTopic(@RequestBody CreateTopicRequestDTO createTopicRequestDTO) {
         KafkaTopicInfo kafkaTopicInfo = adminKafkaService.createTopic(createTopicRequestDTO);
-        return getSpecificResponse("Topic created successfully", 201, kafkaTopicInfo);
+        return getSpecificResponse("Topic created successfully", HttpStatus.CREATED.value(), kafkaTopicInfo);
     }
 
     /**
@@ -85,7 +85,7 @@ public class AdminKafkaController {
     @GetMapping("/topic/info/{topicName}")
     public ResponseEntity<CommonSuccessResponse<KafkaTopicInfo>> getTopicInfo(@PathVariable("topicName") String topicName) {
         KafkaTopicInfo kafkaTopicInfoResponse = adminKafkaService.getTopicInfo(topicName);
-        return getSpecificResponse("Fetched topic info successfully", 200, kafkaTopicInfoResponse);
+        return getSpecificResponse("Fetched topic info successfully", HttpStatus.OK.value(), kafkaTopicInfoResponse);
     }
 
     /**
@@ -97,7 +97,7 @@ public class AdminKafkaController {
     @DeleteMapping("/topic/delete/{topicName}")
     public ResponseEntity<CommonSuccessResponse<Object>> deleteKafkaTopic(@PathVariable("topicName") String topicName) {
         adminKafkaService.deleteTopic(topicName);
-        return getSpecificResponse("Topic deleted successfully", 200, null);
+        return getSpecificResponse("Topic deleted successfully", HttpStatus.OK.value(), null);
     }
 
     /**
