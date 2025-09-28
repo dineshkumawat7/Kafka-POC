@@ -4,6 +4,7 @@ import com.kafka.poc.dto.CreateTopicRequestDTO;
 import com.kafka.poc.exception.CommonCustomException;
 import com.kafka.poc.model.KafkaTopicInfo;
 import com.kafka.poc.service.AdminKafkaService;
+import com.kafka.poc.utils.Utility;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.admin.*;
 import org.apache.kafka.common.TopicPartitionInfo;
@@ -23,15 +24,6 @@ import java.util.concurrent.ExecutionException;
  * <p>
  * This service provides methods to create, retrieve, and delete Kafka topics using the Kafka AdminClient API.
  * It handles business exceptions and translates them into custom exceptions with appropriate HTTP status codes.
- * </p>
- *
- * <p>Key features:</p>
- * <ul>
- *   <li>Creates a new topic or throws a conflict exception if the topic already exists.</li>
- *   <li>Fetches topic metadata and configuration details.</li>
- *   <li>Deletes a topic or throws a not found exception if the topic does not exist.</li>
- *   <li>All exceptions are wrapped in {@link CommonCustomException} for standardized error handling.</li>
- * </ul>
  * </p>
  */
 @Service
@@ -54,7 +46,7 @@ public class AdminKafkaServiceImpl implements AdminKafkaService {
      */
     @Override
     public KafkaTopicInfo createTopic(CreateTopicRequestDTO createTopicRequestDTO) {
-        log.info("Incoming topic creation request : {}", createTopicRequestDTO);
+        log.info("Incoming topic creation request : {}", Utility.objectToJsonString(createTopicRequestDTO));
         KafkaTopicInfo kafkaTopicInfo = null;
         try (AdminClient adminClient = AdminClient.create(kafkaAdmin.getConfigurationProperties())) {
             NewTopic newTopic = new NewTopic(
@@ -65,7 +57,7 @@ public class AdminKafkaServiceImpl implements AdminKafkaService {
             try {
                 createTopicsResult.all().get();
                 kafkaTopicInfo = getTopicInfo(createTopicRequestDTO.getTopicName());
-                log.info("Topic created successfully : {}", createTopicRequestDTO);
+                log.info("Topic created successfully : {}", Utility.objectToJsonString(kafkaTopicInfo));
             } catch (ExecutionException e) {
                 Throwable cause = e.getCause();
                 if (cause instanceof TopicExistsException) {
@@ -126,7 +118,7 @@ public class AdminKafkaServiceImpl implements AdminKafkaService {
                                         ))
                         )
                         .build();
-                log.info("Fetched topic info successfully : {}", kafkaTopicInfo);
+                log.info("Fetched topic info successfully : {}", Utility.objectToJsonString(kafkaTopicInfo));
                 return kafkaTopicInfo;
             }
         } catch (ExecutionException e) {
