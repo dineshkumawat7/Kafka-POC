@@ -2,23 +2,35 @@ package com.kafka.poc.controller;
 
 import com.kafka.poc.exception.ServiceException;
 import com.kafka.poc.model.common.CommonSuccessResponse;
+import com.kafka.poc.producer.KafkaProducer;
 import com.kafka.poc.utils.Constants;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
+import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/kafka/cluster")
-public class ClusterController {
+@RequestMapping("/api/kafka/producer")
+public class ProducerController {
 
-    @GetMapping
-    public ResponseEntity<CommonSuccessResponse<Object>> healthCheck() {
+    @Autowired
+    private KafkaProducer kafkaProducer;
 
-        return getSpecificResponse("", HttpStatus.OK.value(), null);
+    @PostMapping("/produce/{topic-name}")
+    public ResponseEntity<CommonSuccessResponse<Object>> produceMessage(@PathVariable("topic-name") String topicName, @RequestBody String message) {
+        kafkaProducer.sendMessage(topicName, message);
+        return getSpecificResponse("Message produced successfully", HttpStatus.OK.value(), message);
+    }
+
+    @PostMapping("/produce-with-key/{topic-name}")
+    public ResponseEntity<CommonSuccessResponse<Object>> produceMessageWithKey(@PathVariable("topic-name") String topicName, @RequestBody String message) {
+        String key = UUID.randomUUID().toString().replace("-", "");
+        kafkaProducer.sendMessageWithKey(topicName, message, key);
+        String msg = String.format("Message produced successfully with key %s", key);
+        return getSpecificResponse(msg, HttpStatus.OK.value(), message);
     }
 
     /**

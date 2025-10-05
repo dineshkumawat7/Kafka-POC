@@ -2,14 +2,17 @@ package com.kafka.poc.model;
 
 import lombok.*;
 
+import java.util.List;
+import java.util.Map;
+
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class MemberInfo {
-    private String memberId;
+    private String id;
     private String clientId;
     private String host;
-    private String assignment;
+    private List<Map<String, Object>> assignment;
 }

@@ -1,26 +1,32 @@
 package com.kafka.poc.service.impl;
 
 import com.kafka.poc.exception.CommonCustomException;
+import com.kafka.poc.model.BrokerConfigs;
 import com.kafka.poc.model.BrokerInfo;
-import com.kafka.poc.model.LogDirInfo;
+import com.kafka.poc.model.BrokerLogs;
 import com.kafka.poc.service.BrokerService;
+import com.kafka.poc.utils.Utility;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.admin.*;
+import org.apache.kafka.common.KafkaFuture;
 import org.apache.kafka.common.Node;
 import org.apache.kafka.common.config.ConfigResource;
-import org.apache.kafka.common.requests.DescribeLogDirsResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.kafka.core.KafkaAdmin;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Slf4j
 @Service
 public class BrokerServiceImpl implements BrokerService {
 
+    /**
+     * KafkaAdmin for managing Kafka cluster operations.
+     */
     @Autowired
     private KafkaAdmin kafkaAdmin;
 
@@ -65,6 +71,70 @@ public class BrokerServiceImpl implements BrokerService {
         } catch (Exception e) {
             log.error("Unexpected error occurred while fetching broker info.", e);
             throw new CommonCustomException(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Unexpected error occurred while fetching kafka brokers info.");
+        }
+    }
+
+    /**
+     * Retrieves the configuration details for a specific Kafka broker.
+     * <p>
+     * This method fetches all configuration entries for the given broker ID and returns the details
+     * as a BrokerConfig object. If multiple configs exist, only the first is returned. All exceptions
+     * are handled gracefully with user-friendly log messages and error responses.
+     * </p>
+     *
+     * @param brokerId the ID of the broker whose configuration is to be fetched
+     * @return BrokerConfig containing configuration details, or null if not found
+     * @throws CommonCustomException if an error occurs during retrieval
+     */
+    @Override
+    public List<BrokerConfigs> getBrokerConfig(int brokerId) {
+        List<BrokerConfigs> brokerConfigs = new ArrayList<>();
+        try (AdminClient adminClient = AdminClient.create(kafkaAdmin.getConfigurationProperties())) {
+            log.info("Starting configuration retrieval for Kafka broker with ID: {}...", brokerId);
+            ConfigResource configResource = new ConfigResource(ConfigResource.Type.BROKER, String.valueOf(brokerId));
+            DescribeConfigsResult describeConfigsResult = adminClient.describeConfigs(Collections.singletonList(configResource));
+            Config config = describeConfigsResult.all().get(30, TimeUnit.SECONDS).get(configResource);
+            config.entries().stream().map(configEntry -> BrokerConfigs.builder()
+                            .name(configEntry.name())
+                            .value(configEntry.value())
+                            .description(configEntry.documentation())
+                            .source(configEntry.source().name())
+                            .type(String.valueOf(configEntry.type()))
+                            .isSensitive(configEntry.isSensitive())
+                            .isReadOnly(configEntry.isReadOnly())
+                            .isDefault(configEntry.isDefault())
+                            .synonyms(configEntry.synonyms())
+                            .build())
+                    .forEach(brokerConfigs::add);
+        } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
+            log.error("Configuration retrieval for broker {} was interrupted. Reason: {}", brokerId, ie.getMessage(), ie);
+            throw new CommonCustomException(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Request interrupted while fetching broker configuration. Please try again.");
+        } catch (Exception e) {
+            log.error("Unexpected error occurred while fetching configuration for broker {}: {}", brokerId, e.getMessage(), e);
+            throw new CommonCustomException(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Unexpected error occurred while fetching broker configuration. Please contact support.");
+        }
+        log.info("Configuration retrieval for Kafka broker with ID: {} completed successfully. {}", brokerId, Utility.objectToJsonString(brokerConfigs));
+        return brokerConfigs;
+    }
+
+    @Override
+    public List<BrokerLogs> getBrokerLogs(int brokerId) {
+        try(AdminClient adminClient = AdminClient.create(kafkaAdmin.getConfigurationProperties())){
+            log.info("Starting log retrieval for Kafka broker with ID: {}...", brokerId);
+            List<BrokerLogs> brokerLogs = new ArrayList<>();
+            DescribeLogDirsResult describeLogDirsResult = adminClient.describeLogDirs(Collections.singleton(brokerId));
+            describeLogDirsResult.descriptions().get(brokerId);
+            describeLogDirsResult.all().get(30, TimeUnit.SECONDS);
+            log.info("Log retrieval for Kafka broker with ID: {} completed successfully. {}", brokerId, Utility.objectToJsonString(brokerLogs));
+            return brokerLogs;
+        } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
+            log.error("Log retrieval for broker {} was interrupted. Reason: {}", brokerId, ie.getMessage(), ie);
+            throw new CommonCustomException(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Request interrupted while fetching broker logs. Please try again.");
+        } catch (Exception e) {
+            log.error("Unexpected error occurred while fetching logs for broker {}: {}", brokerId, e.getMessage(), e);
+            throw new CommonCustomException(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Unexpected error occurred while fetching broker logs. Please contact support.");
         }
     }
 }

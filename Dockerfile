@@ -1,14 +1,12 @@
-# Use OpenJDK 21 lightweight base image
-FROM openjdk:21-jdk-slim
-
-# Set working directory
+FROM maven:3.9.6-eclipse-temurin-21-alpine AS build
 WORKDIR /app
+COPY pom.xml .
+COPY src ./src
+RUN mvn clean package -DskipTests
 
-# Copy built jar from target/ (Maven) or build/libs/ (Gradle)
-COPY target/myapp-0.0.1-SNAPSHOT.jar app.jar
 
-# Expose Spring Boot default port
+FROM eclipse-temurin:21-jre-alpine
+WORKDIR /app
+COPY --from=build /app/target/*.jar app.jar
 EXPOSE 8080
-
-# Run the app
 ENTRYPOINT ["java", "-jar", "app.jar"]

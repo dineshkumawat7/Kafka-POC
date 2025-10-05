@@ -1,7 +1,9 @@
 package com.kafka.poc.controller;
 
 import com.kafka.poc.exception.ServiceException;
+import com.kafka.poc.model.BrokerConfigs;
 import com.kafka.poc.model.BrokerInfo;
+import com.kafka.poc.model.BrokerLogs;
 import com.kafka.poc.model.common.CommonSuccessResponse;
 import com.kafka.poc.service.BrokerService;
 import com.kafka.poc.utils.Constants;
@@ -9,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -36,6 +39,17 @@ public class BrokerController {
         return getSpecificResponse("Fetched broker info successfully.", HttpStatus.OK.value(), brokerInfos);
     }
 
+    @GetMapping("/{broker-id}/configs")
+    public ResponseEntity<CommonSuccessResponse<List<BrokerConfigs>>> getBrokerConfig(@PathVariable("broker-id") int brokerId) {
+        List<BrokerConfigs> brokerConfigs = brokerService.getBrokerConfig(brokerId);
+        return getSpecificResponse("Fetched broker configs successfully.", HttpStatus.OK.value(), brokerConfigs);
+    }
+
+    @GetMapping("/{broker-id}/logs")
+    public ResponseEntity<CommonSuccessResponse<List<BrokerLogs>>> getBrokerLogs(@PathVariable("broker-id") int brokerId) {
+        List<BrokerLogs> brokerConfigs = brokerService.getBrokerLogs(brokerId);
+        return getSpecificResponse("Fetched broker logs successfully.", HttpStatus.OK.value(), brokerConfigs);
+    }
     /**
      * Constructs a standardized API response with the given parameters.
      *

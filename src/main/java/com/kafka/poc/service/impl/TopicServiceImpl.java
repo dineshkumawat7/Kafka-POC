@@ -10,6 +10,7 @@ import org.apache.kafka.clients.admin.*;
 import org.apache.kafka.common.Node;
 import org.apache.kafka.common.TopicPartitionInfo;
 import org.apache.kafka.common.config.ConfigResource;
+import org.apache.kafka.common.errors.InvalidReplicationFactorException;
 import org.apache.kafka.common.errors.TopicExistsException;
 import org.apache.kafka.common.errors.UnknownTopicOrPartitionException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -74,6 +75,11 @@ public class TopicServiceImpl implements TopicService {
                 throw new CommonCustomException(
                         HttpStatus.CONFLICT.value(),
                         String.format("Topic '%s' already exists.", createTopicRequestDTO.getTopicName()));
+            } else if (cause instanceof InvalidReplicationFactorException) {
+                log.error("Invalid replication factor for topic '{}'. Exception: {}", createTopicRequestDTO.getTopicName(), e.getMessage(), e);
+                throw new CommonCustomException(
+                        HttpStatus.BAD_REQUEST.value(),
+                        String.format("Invalid replication factor for topic '%s': %s", createTopicRequestDTO.getTopicName(), cause.getMessage()));
             } else {
                 log.error("Failed to create topic '{}'. Unexpected error: {}", createTopicRequestDTO.getTopicName(), e.getMessage(), e);
                 throw new CommonCustomException(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Failed to create topic due to an unexpected error.");
