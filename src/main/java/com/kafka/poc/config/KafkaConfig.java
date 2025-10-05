@@ -1,6 +1,7 @@
 package com.kafka.poc.config;
 
 import org.apache.kafka.clients.admin.AdminClientConfig;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.core.KafkaAdmin;
@@ -21,6 +22,9 @@ import java.util.Map;
 @Configuration
 public class KafkaConfig {
 
+    @Value("${spring.kafka.bootstrap-servers}")
+    private String bootstrapServer;
+
     /**
      * Creates and configures a KafkaAdmin bean for Kafka administration operations.
      *
@@ -29,7 +33,7 @@ public class KafkaConfig {
     @Bean
     public KafkaAdmin kafkaAdmin(){
         Map<String, Object> configs = new HashMap<>();
-        configs.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
+        configs.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServer);
         return new KafkaAdmin(configs);
     }
 }
